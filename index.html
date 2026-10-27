@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#151514">
+<meta name="robots" content="noindex">
+<title>Price List</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+Devanagari:wght@400;500;600&family=Noto+Sans+Oriya:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #151514;
+    --text: #F2EFE8;
+    --muted: #8E8B84;
+    --line: rgba(242, 239, 232, 0.10);
+    --gold: #C8A96A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html { background: var(--bg); }
+  body {
+    background-color: var(--bg);
+    background-image: radial-gradient(120% 55% at 50% -8%, rgba(242, 239, 232, 0.07) 0%, rgba(21, 21, 20, 0) 62%);
+    background-repeat: no-repeat;
+    color: var(--text);
+    font-family: 'Space Mono', 'Noto Sans Devanagari', 'Noto Sans Oriya', ui-monospace, Menlo, monospace;
+    font-size: 16px;
+    line-height: 1.4;
+    min-height: 100vh;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* very faint grain */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  /* top bar */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(env(safe-area-inset-top) + 6px) 20px 6px;
+    min-height: calc(52px + env(safe-area-inset-top));
+    background: rgba(21, 21, 20, 0.94);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .logo {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+  }
+  .logo svg, .logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .salon {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .lang { position: relative; }
+  .lang-btn {
+    min-width: 48px;
+    min-height: 44px;
+    padding: 0 10px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+  }
+  .lang-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    min-width: 150px;
+    background: #1d1d1b;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  }
+  .lang-menu.open { display: block; }
+  .lang-menu button {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    padding: 0 16px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    color: var(--text);
+    font: inherit;
+    font-size: 15px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .lang-menu button:last-child { border-bottom: none; }
+  .lang-menu button.active { color: var(--muted); }
+
+  /* optional notice strip */
+  .notice {
+    display: none;
+    position: relative;
+    z-index: 1;
+    padding: 10px 20px;
+    font-size: 13px;
+    text-align: center;
+    color: var(--text);
+    background: rgba(242, 239, 232, 0.06);
+    border-bottom: 1px solid var(--line);
+  }
+  .notice.on { display: block; }
+
+  /* content */
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 8px 20px calc(48px + env(safe-area-inset-bottom));
+  }
+  .stale {
+    margin-top: 14px;
+    padding: 10px 12px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .group-title {
+    margin-top: 36px;
+    padding-bottom: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text);
+    border-bottom: 1px solid var(--line);
+  }
+  main > .group-title:first-child { margin-top: 18px; }
+
+  .row { border-bottom: 1px solid var(--line); animation: rise 0.45s ease both; animation-delay: calc(var(--i, 0) * 35ms); }
+  .row-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+    min-height: 64px;
+    padding: 12px 0;
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+  }
+  button.row-head { cursor: pointer; transition: opacity 0.15s ease; }
+  button.row-head:active { opacity: 0.6; }
+  .left { min-width: 0; }
+  .name { font-size: 15px; font-weight: 400; line-height: 1.35; }
+  .time { margin-top: 4px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .price {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+  }
+  .chev-space { display: block; width: 8px; height: 8px; margin-right: 3px; }
+  .chev {
+    margin-right: 3px;
+    width: 8px;
+    height: 8px;
+    border-right: 1.5px solid var(--muted);
+    border-bottom: 1.5px solid var(--muted);
+    transform: rotate(45deg) translateY(-2px);
+    transition: transform 0.25s ease;
+  }
+  .row.open .chev { transform: rotate(-135deg) translateY(-2px); }
+  .note-wrap {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease;
+  }
+  .row.open .note-wrap { grid-template-rows: 1fr; }
+  .note-inner { overflow: hidden; min-height: 0; }
+  .note {
+    padding: 0 0 14px;
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+
+  .pricebox { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+  .pricebox .from, .pricebox .until {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .pricebox .old { font-size: 12px; color: var(--muted); text-decoration: line-through; line-height: 1.2; }
+  .opts { padding: 0 0 8px; }
+  .opt {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 0 12px 14px;
+    border-top: 1px solid var(--line);
+    border-left: 1px solid var(--line);
+  }
+  .opt:first-child { margin-top: 4px; }
+  .opt-name { font-size: 14px; }
+  .opt .price { font-size: 14px; }
+  .opt .chev-space { display: none; }
+  .footnote { margin-top: 28px; font-size: 12px; line-height: 1.6; color: var(--muted); }
+  .updated { margin-top: 6px; font-size: 11px; color: var(--muted); opacity: 0.75; }
+  .error { padding: 56px 0; text-align: center; color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+  /* loading placeholder */
+  .skel { height: 64px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
+  .skel i {
+    display: block; height: 12px; border-radius: 6px;
+    background: linear-gradient(90deg, rgba(242,239,232,0.05), rgba(242,239,232,0.12), rgba(242,239,232,0.05));
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+  }
+  .skel i:first-child { width: 42%; }
+  .skel i:last-child { width: 14%; }
+
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .row { animation: none; }
+    .skel i { animation: none; }
+    .note-wrap, .chev { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo" id="logoBox"></div>
+    <div class="salon" id="salonName"></div>
+  </div>
+  <div class="lang">
+    <button class="lang-btn" id="langBtn" aria-haspopup="true" aria-expanded="false">EN</button>
+    <div class="lang-menu" id="langMenu" role="menu">
+      <button data-lang="en" role="menuitem">English</button>
+      <button data-lang="hi" role="menuitem">हिन्दी</button>
+      <button data-lang="or" role="menuitem">ଓଡ଼ିଆ</button>
+    </div>
+  </div>
+</header>
+
+<div class="notice" id="notice"></div>
+
+<main id="list"></main>
+
+<script>
+/* ============================================================
+   STEP 1. SHOP LINKS
+   Each shop has one short name (the "key") and two Google Sheet links.
+   - The key never changes after you print the NFC card.
+   - Add a new shop by adding one new line, like the "sample" line.
+   - While the two links are empty (""), the page shows demo data.
+   Link of the page for a shop:  your-page-address/?s=sample
+   ============================================================ */
+var SHOPS = {
+  sample: {
+    prices: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTo6s7SoAo9jvOisOXWLToKsobBRHCXtLouwm6SEM69UqkwvdbmBiwMcYFFPWceJRQQ70gY43wo4p_o/pub?gid=0&single=true&output=csv",
+    shop:   "https://docs.google.com/spreadsheets/d/e/2PACX-1vTo6s7SoAo9jvOisOXWLToKsobBRHCXtLouwm6SEM69UqkwvdbmBiwMcYFFPWceJRQQ70gY43wo4p_o/pub?gid=1&single=true&output=csv",
+    logo:   ""    // optional: logo file name, for example "logos/sample.png". Empty = sample mark
+  }
+};
+var DEFAULT_SHOP = "sample";
+
+/* ============================================================
+   DEMO DATA (same as the sample Sheet). Used only when links are empty.
+   ============================================================ */
+var DEMO_PRICES = "group_en,group_hi,group_or,name_en,name_hi,name_or,minutes,price,note_en,note_hi,note_or,show,option_of,offer_price,offer_until\nHair,बाल,କେଶ,Haircut,हेयरकट,ହେୟାରକଟ୍,,,Wash and styling included.,वॉश और स्टाइलिंग शामिल है।,ୱାସ୍ ଏବଂ ଷ୍ଟାଇଲିଂ ଅନ୍ତର୍ଭୁକ୍ତ।,yes,,,\n,,,Trim / Maintenance,ट्रिम / मेंटेनेंस,ଟ୍ରିମ୍ / ମେଣ୍ଟେନାନ୍ସ,20,300,,,,yes,Haircut,,\n,,,Fringe / Bangs,फ्रिंज / बैंग्स,ଫ୍ରିଞ୍ଜ୍ / ବ୍ୟାଂଗ୍ସ,15,150,,,,yes,Haircut,,\n,,,Bob / Short Cut,बॉब / शॉर्ट कट,ବବ୍ / ଶର୍ଟ କଟ୍,40,600,,,,yes,Haircut,,\n,,,Step Cut,स्टेप कट,ଷ୍ଟେପ୍ କଟ୍,45,600,,,,yes,Haircut,,\n,,,U Cut / V Cut,यू कट / वी कट,ୟୁ କଟ୍ / ଭି କଟ୍,45,600,,,,yes,Haircut,,\n,,,Layer Cut,लेयर कट,ଲେୟାର କଟ୍,60,700,,,,yes,Haircut,,\n,,,Feather Cut,फेदर कट,ଫେଦର୍ କଟ୍,60,800,,,,yes,Haircut,,\n,,,Men's Haircut,मेन्स हेयरकट,ପୁରୁଷଙ୍କ ହେୟାରକଟ୍,30,300,,,,yes,Haircut,,\nHair,बाल,କେଶ,Hair Colour,हेयर कलर,ହେୟାର କଲର,,,Price depends on hair length.,कीमत बालों की लंबाई पर निर्भर करती है।,ମୂଲ୍ୟ କେଶର ଲମ୍ବ ଉପରେ ନିର୍ଭର କରେ।,yes,,,\n,,,Root Touch-up,रूट टच-अप,ରୁଟ୍ ଟଚ୍-ଅପ୍,60,1200,,,,yes,Hair Colour,,\n,,,Global Colour,ग्लोबल कलर,ଗ୍ଲୋବାଲ୍ କଲର,90,1800,,,,yes,Hair Colour,,\n,,,Highlights,हाइलाइट्स,ହାଇଲାଇଟ୍ସ,120,2500,,,,yes,Hair Colour,,\n,,,Balayage,बालायेज,ବାଲାୟାଜ୍,180,4000+,,,,yes,Hair Colour,,\nHair,बाल,କେଶ,Hair Spa,हेयर स्पा,ହେୟାର ସ୍ପା,60,1500,,,,yes,,,\nSkin,त्वचा,ତ୍ୱଚା,Clean-up,क्लीन-अप,କ୍ଲିନ୍-ଅପ୍,40,800,,,,yes,,,\nSkin,त्वचा,ତ୍ୱଚା,Facial,फेशियल,ଫେସିଆଲ,,,Choose the type with your therapist.,फेशियल का प्रकार अपने थेरेपिस्ट के साथ चुनें।,ଆପଣଙ୍କ ଥେରାପିଷ୍ଟଙ୍କ ସହ ପ୍ରକାର ବାଛନ୍ତୁ।,yes,,,\n,,,Basic Cleansing,बेसिक क्लींजिंग,ବେସିକ୍ କ୍ଲିନ୍ଜିଂ,45,800,,,,yes,Facial,,\n,,,Fruit Facial,फ्रूट फेशियल,ଫ୍ରୁଟ୍ ଫେସିଆଲ,60,1200,,,,yes,Facial,,\n,,,Anti-Tan Facial,एंटी-टैन फेशियल,ଆଣ୍ଟି-ଟ୍ୟାନ୍ ଫେସିଆଲ,60,1500,,,,yes,Facial,,\n,,,Gold Facial,गोल्ड फेशियल,ଗୋଲ୍ଡ ଫେସିଆଲ,60,1800,,,,yes,Facial,1500,2026-12-31\nSkin,त्वचा,ତ୍ୱଚା,Threading,थ्रेडिंग,ଥ୍ରେଡିଂ,15,100,,,,yes,,,\nHands & Feet,हाथ और पैर,ହାତ ଓ ପାଦ,Manicure,मैनिक्योर,ମ୍ୟାନିକ୍ୟୁର୍,45,700,,,,yes,,,\nHands & Feet,हाथ और पैर,ହାତ ଓ ପାଦ,Pedicure,पेडिक्योर,ପେଡିକ୍ୟୁର୍,60,900,,,,yes,,,\nHands & Feet,हाथ और पैर,ହାତ ଓ ପାଦ,Waxing (full arms),वैक्सिंग (पूरे हाथ),ୱାକ୍ସିଂ (ପୂରା ହାତ),30,400,,,,yes,,,\nBridal,ब्राइडल,ବ୍ରାଇଡାଲ୍,Bridal Makeup,ब्राइडल मेकअप,ବ୍ରାଇଡାଲ୍ ମେକଅପ୍,120,8000+,Trial available before the event.,इवेंट से पहले ट्रायल उपलब्ध है।,ଅନୁଷ୍ଠାନ ପୂର୍ବରୁ ଟ୍ରାଏଲ୍ ଉପଲବ୍ଧ।,yes,,,\n";
+var DEMO_SHOP = "key,value\nname,Sample Salon\nnotice_on,no\nnotice_until,2026-12-31\nnotice_en,Festive offer: 10% off on all facials this week\nnotice_hi,त्योहार ऑफर: इस हफ्ते सभी फेशियल पर 10% छूट\nnotice_or,ପର୍ବ ଅଫର୍: ଏହି ସପ୍ତାହ ସବୁ ଫେସିଆଲରେ 10% ଛାଡ଼\nnote_en,Final price may vary by hair length and treatment.\nnote_hi,अंतिम कीमत बालों की लंबाई और ट्रीटमेंट के अनुसार बदल सकती है।\nnote_or,ଶେଷ ମୂଲ୍ୟ କେଶର ଲମ୍ବ ଏବଂ ଚିକିତ୍ସା ଅନୁସାରେ ଭିନ୍ନ ହୋଇପାରେ।\nupdated,27 Oct 2026\n";
+
+/* ============================================================
+   FIXED TEXT (no need to change)
+   ============================================================ */
+var TEXT = {
+  min:  { en: "min", hi: "मिनट", or: "ମିନିଟ" },
+  note: {
+    en: "Final price may vary by hair length and treatment.",
+    hi: "अंतिम कीमत बालों की लंबाई और ट्रीटमेंट के अनुसार बदल सकती है।",
+    or: "ଶେଷ ମୂଲ୍ୟ କେଶର ଲମ୍ବ ଏବଂ ଚିକିତ୍ସା ଅନୁସାରେ ଭିନ୍ନ ହୋଇପାରେ।"
+  },
+  error: {
+    en: "Prices are not available right now. Please ask at the desk.",
+    hi: "अभी कीमतें उपलब्ध नहीं हैं। कृपया रिसेप्शन पर पूछें।",
+    or: "ମୂଲ୍ୟ ଏବେ ଉପଲବ୍ଧ ନାହିଁ। ଦୟାକରି ରିସେପ୍ସନରେ ପଚାରନ୍ତୁ।"
+  },
+  stale: {
+    en: "Showing saved prices. They may be old. Please confirm at the desk.",
+    hi: "सेव की हुई कीमतें दिख रही हैं। ये पुरानी हो सकती हैं। कृपया रिसेप्शन पर पूछें।",
+    or: "ସେଭ୍ ହୋଇଥିବା ମୂଲ୍ୟ ଦେଖାଯାଉଛି। ଏହା ପୁରୁଣା ହୋଇପାରେ। ଦୟାକରି ରିସେପ୍ସନରେ ପଚାରନ୍ତୁ।"
+  },
+  updated: { en: "Prices updated", hi: "कीमतें अपडेट की गईं", or: "ମୂଲ୍ୟ ଅପଡେଟ୍ ହୋଇଛି" },
+  from:  { en: "from", hi: "शुरुआती", or: "ଆରମ୍ଭ" },
+  offer: { en: "Offer", hi: "ऑफर", or: "ଅଫର୍" },
+  until: { en: "Until {d}", hi: "{d} तक", or: "{d} ପର୍ଯ୍ୟନ୍ତ" }
+};
+var LABELS = { en: "EN", hi: "हि", or: "ଓଡ଼ି" };
+
+/* Sample logo mark (used when a shop has no logo file yet) */
+var SAMPLE_LOGO = '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">' +
+  '<circle cx="16" cy="16" r="14.2"/>' +
+  '<path d="M16 6.5c5.2 4.6 5.2 14.4 0 19-5.2-4.6-5.2-14.4 0-19z"/>' +
+  '<path d="M16 6.5v19" opacity="0.45"/></svg>';
+
+function setLogo(path) {
+  var box = document.getElementById("logoBox");
+  box.innerHTML = SAMPLE_LOGO;
+  if (path) {
+    var img = new Image();
+    img.alt = "";
+    img.onload = function () { box.innerHTML = ""; box.appendChild(img); };
+    img.src = path;
+  }
+}
+
+/* ============================================================
+   CODE (no need to change anything below)
+   ============================================================ */
+var lang = "en";
+var DATA = null;       // { groups: [...], shop: {...}, stale: false }
+var shopKey = "";
+
+/* --- read CSV text into rows --- */
+function parseCSV(text) {
+  text = String(text).replace(/^﻿/, "");
+  var rows = [], row = [], cur = "", inQ = false, i, c;
+  for (i = 0; i < text.length; i++) {
+    c = text.charAt(i);
+    if (inQ) {
+      if (c === '"') {
+        if (text.charAt(i + 1) === '"') { cur += '"'; i++; } else { inQ = false; }
+      } else { cur += c; }
+    } else if (c === '"') { inQ = true; }
+    else if (c === ",") { row.push(cur); cur = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text.charAt(i + 1) === "\n") { i++; }
+      row.push(cur); cur = ""; rows.push(row); row = [];
+    } else { cur += c; }
+  }
+  if (cur !== "" || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+
+function isNo(v) {
+  v = String(v || "").trim().toLowerCase();
+  return v === "no" || v === "n" || v === "0" || v === "false" || v === "hide";
+}
+function isYes(v) {
+  v = String(v || "").trim().toLowerCase();
+  return v === "yes" || v === "y" || v === "1" || v === "true" || v === "on";
+}
+
+/* --- Prices tab: returns a list of groups, or null if the data is wrong ---
+   A row with "option_of" filled is a choice inside that service (for example a type of haircut). */
+function parsePrices(text) {
+  var rows = parseCSV(text);
+  if (rows.length < 2) { return null; }
+  var head = rows[0].map(function (x) { return String(x).trim().toLowerCase(); });
+  if (head.indexOf("name_en") < 0 || head.indexOf("price") < 0) { return null; }
+  var groups = [], byKey = {}, parents = {}, optionRows = [], r, j, o, k, item;
+  for (r = 1; r < rows.length; r++) {
+    o = {};
+    for (j = 0; j < head.length; j++) { o[head[j]] = rows[r][j] === undefined ? "" : String(rows[r][j]); }
+    if (!String(o.name_en).trim()) { continue; }
+    if (isNo(o.show)) { continue; }
+    if (String(o.option_of || "").trim()) { optionRows.push(o); continue; }
+    o.options = [];
+    k = String(o.group_en || "").trim();
+    if (!byKey.hasOwnProperty(k)) { byKey[k] = { key: k, first: o, items: [] }; groups.push(byKey[k]); }
+    byKey[k].items.push(o);
+    var pk = String(o.name_en).trim().toLowerCase();
+    if (!parents.hasOwnProperty(pk)) { parents[pk] = o; }
+  }
+  optionRows.forEach(function (op) {
+    var p = parents[String(op.option_of).trim().toLowerCase()];
+    if (p) { p.options.push(op); }
+  });
+  return groups.length ? groups : null;
+}
+
+/* --- Shop tab: a list of key,value rows --- */
+function parseShop(text) {
+  var rows = parseCSV(text), out = {}, i, k;
+  for (i = 0; i < rows.length; i++) {
+    k = String(rows[i][0] || "").trim().toLowerCase();
+    if (k && k !== "key") { out[k] = rows[i][1] === undefined ? "" : String(rows[i][1]).trim(); }
+  }
+  return out;
+}
+
+/* --- pick the text in the chosen language, else English --- */
+function pick(o, base) {
+  return (o[base + "_" + lang] || "").trim() || (o[base + "_en"] || "").trim();
+}
+
+/* --- dates and offers --- */
+var MONTHS = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+function pad2(n) { return (n < 10 ? "0" : "") + n; }
+function todayStr() {
+  var d = new Date();
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+}
+/* Reads 2026-12-31, 31/12/2026, 31-12-2026 or 31 Dec 2026. Returns "YYYY-MM-DD" or "" */
+function parseDate(s) {
+  s = String(s || "").trim();
+  var m, y, mo, d;
+  if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+  else if ((m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/))) { d = +m[1]; mo = +m[2]; y = +m[3]; }
+  else if ((m = s.match(/^(\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4})$/))) {
+    mo = MONTHS.indexOf(m[2].slice(0, 3).toLowerCase()) + 1; d = +m[1]; y = +m[3];
+  } else { return ""; }
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) { return ""; }
+  return y + "-" + pad2(mo) + "-" + pad2(d);
+}
+function fmtDate(ds) {
+  var p = ds.split("-");
+  var dt = new Date(+p[0], +p[1] - 1, +p[2]);
+  var loc = { en: "en-IN", hi: "hi-IN", or: "or-IN" }[lang];
+  try { return dt.toLocaleDateString(loc, { day: "numeric", month: "short" }); }
+  catch (e) { return pad2(+p[2]) + "/" + pad2(+p[1]); }
+}
+/* An offer is shown only while its end date has not passed. A date the page cannot read hides the offer. */
+function offerState(it) {
+  var op = String(it.offer_price || "").trim();
+  if (!op) { return null; }
+  var u = String(it.offer_until || "").trim(), ud = "";
+  if (u) {
+    ud = parseDate(u);
+    if (!ud || todayStr() > ud) { return null; }
+  }
+  return { price: op, until: ud };
+}
+function toNum(v) {
+  var m = String(v === undefined ? "" : v).replace(/[\u20B9,\s]/g, "").replace(/^rs\.?/i, "").match(/^(\d+(?:\.\d+)?)\+?$/);
+  return m ? Number(m[1]) : NaN;
+}
+function lowestOption(it) {
+  var best = null;
+  it.options.forEach(function (o) {
+    var of = offerState(o);
+    var n = toNum(of ? of.price : o.price);
+    if (!isNaN(n) && (best === null || n < best)) { best = n; }
+  });
+  return best;
+}
+
+function formatPrice(v) {
+  var s = String(v === undefined ? "" : v).trim();
+  var clean = s.replace(/[₹,\s]/g, "").replace(/^rs\.?/i, "");
+  var m = clean.match(/^(\d+(?:\.\d+)?)(\+?)$/);
+  if (m) { return "₹" + Number(m[1]).toLocaleString("en-IN") + m[2]; }
+  return s;
+}
+
+function formatTime(v) {
+  var s = String(v === undefined ? "" : v).trim();
+  if (!s) { return ""; }
+  if (/^\d+$/.test(s)) { return s + " " + TEXT.min[lang]; }
+  return s;
+}
+
+function el(tag, cls, txt) {
+  var e = document.createElement(tag);
+  if (cls) { e.className = cls; }
+  if (txt !== undefined) { e.textContent = txt; }
+  return e;
+}
+
+function showError() {
+  var list = document.getElementById("list");
+  list.innerHTML = "";
+  list.appendChild(el("div", "error", TEXT.error[lang]));
+  document.getElementById("notice").classList.remove("on");
+}
+
+function showSkeleton() {
+  var list = document.getElementById("list");
+  list.innerHTML = "";
+  for (var i = 0; i < 7; i++) {
+    var s = el("div", "skel");
+    s.appendChild(el("i"));
+    s.appendChild(el("i"));
+    list.appendChild(s);
+  }
+}
+
+function priceBox(it) {
+  var box = el("div", "pricebox");
+  var base = String(it.price === undefined ? "" : it.price).trim();
+  var of = offerState(it);
+  if (!base && !of && it.options && it.options.length) {
+    var low = lowestOption(it);
+    if (low !== null) {
+      box.appendChild(el("div", "from", TEXT.from[lang]));
+      box.appendChild(el("div", "price", formatPrice(String(low))));
+      return box;
+    }
+  }
+  if (of) {
+    if (base) { box.appendChild(el("div", "old", formatPrice(base))); }
+    box.appendChild(el("div", "price", formatPrice(of.price)));
+    box.appendChild(el("div", "until", of.until ? TEXT.until[lang].replace("{d}", fmtDate(of.until)) : TEXT.offer[lang]));
+    return box;
+  }
+  box.appendChild(el("div", "price", formatPrice(base)));
+  return box;
+}
+
+function optionRow(o) {
+  var r = el("div", "opt");
+  var left = el("div", "left");
+  left.appendChild(el("div", "opt-name", pick(o, "name")));
+  var tm = formatTime(o.minutes);
+  if (tm) { left.appendChild(el("div", "time", tm)); }
+  r.appendChild(left);
+  r.appendChild(priceBox(o));
+  return r;
+}
+
+function render() {
+  document.documentElement.lang = lang;
+  document.getElementById("langBtn").textContent = LABELS[lang];
+  var buttons = document.querySelectorAll("#langMenu button");
+  for (var b = 0; b < buttons.length; b++) {
+    buttons[b].classList.toggle("active", buttons[b].getAttribute("data-lang") === lang);
+  }
+  if (!DATA) { return; }
+
+  var shop = DATA.shop;
+  var name = shop.name || "";
+  document.getElementById("salonName").textContent = name;
+  document.title = name ? name + " - Prices" : "Price List";
+
+  var notice = document.getElementById("notice");
+  var nt = pick(shop, "notice");
+  var noticeOk = isYes(shop.notice_on) && nt;
+  if (noticeOk && shop.notice_until) {
+    var nd = parseDate(shop.notice_until);
+    if (!nd || todayStr() > nd) { noticeOk = false; }
+  }
+  if (noticeOk) { notice.textContent = nt; notice.classList.add("on"); }
+  else { notice.classList.remove("on"); }
+
+  var list = document.getElementById("list");
+  list.innerHTML = "";
+
+  if (DATA.stale) { list.appendChild(el("div", "stale", TEXT.stale[lang])); }
+
+  var n = 0;
+  DATA.groups.forEach(function (g) {
+    var gt = pick(g.first, "group");
+    if (gt) { list.appendChild(el("div", "group-title", gt)); }
+
+    g.items.forEach(function (it) {
+      var row = el("div", "row");
+      row.style.setProperty("--i", String(Math.min(n, 12)));
+      n++;
+
+      var noteText = pick(it, "note");
+      var opts = it.options || [];
+      var expandable = !!noteText || opts.length > 0;
+      var head = expandable ? el("button", "row-head") : el("div", "row-head");
+      if (expandable) { head.setAttribute("aria-expanded", "false"); head.type = "button"; }
+
+      var left = el("div", "left");
+      left.appendChild(el("div", "name", pick(it, "name")));
+      var tm = formatTime(it.minutes);
+      if (tm) { left.appendChild(el("div", "time", tm)); }
+
+      var right = el("div", "right");
+      right.appendChild(priceBox(it));
+      right.appendChild(el("span", expandable ? "chev" : "chev-space"));
+
+      head.appendChild(left);
+      head.appendChild(right);
+      row.appendChild(head);
+
+      if (expandable) {
+        var wrap = el("div", "note-wrap");
+        var inner = el("div", "note-inner");
+        if (noteText) { inner.appendChild(el("div", "note", noteText)); }
+        if (opts.length) {
+          var ol = el("div", "opts");
+          opts.forEach(function (o) { ol.appendChild(optionRow(o)); });
+          inner.appendChild(ol);
+        }
+        wrap.appendChild(inner);
+        row.appendChild(wrap);
+        head.addEventListener("click", function () {
+          var open = row.classList.toggle("open");
+          head.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+      }
+      list.appendChild(row);
+    });
+  });
+
+  var foot = el("p", "footnote", pick(shop, "note") || TEXT.note[lang]);
+  list.appendChild(foot);
+  if (shop.updated) {
+    list.appendChild(el("p", "updated", TEXT.updated[lang] + ": " + shop.updated));
+  }
+}
+
+/* --- language menu --- */
+function setLang(l) {
+  lang = l;
+  try { localStorage.setItem("lang", l); } catch (e) {}
+  closeMenu();
+  if (!DATA && document.querySelector(".error")) { showError(); }
+  render();
+}
+function openMenu() {
+  document.getElementById("langMenu").classList.add("open");
+  document.getElementById("langBtn").setAttribute("aria-expanded", "true");
+}
+function closeMenu() {
+  document.getElementById("langMenu").classList.remove("open");
+  document.getElementById("langBtn").setAttribute("aria-expanded", "false");
+}
+document.getElementById("langBtn").addEventListener("click", function (e) {
+  e.stopPropagation();
+  if (document.getElementById("langMenu").classList.contains("open")) { closeMenu(); } else { openMenu(); }
+});
+document.getElementById("langMenu").addEventListener("click", function (e) {
+  var l = e.target.getAttribute("data-lang");
+  if (l) { setLang(l); }
+});
+document.addEventListener("click", closeMenu);
+document.addEventListener("keydown", function (e) { if (e.key === "Escape") { closeMenu(); } });
+
+/* --- load the data --- */
+function fetchText(url) {
+  var ctrl = ("AbortController" in window) ? new AbortController() : null;
+  var timer = setTimeout(function () { if (ctrl) { ctrl.abort(); } }, 8000);
+  var u = url + (url.indexOf("?") > -1 ? "&" : "?") + "t=" + Date.now();
+  return fetch(u, { cache: "no-store", signal: ctrl ? ctrl.signal : undefined }).then(function (r) {
+    clearTimeout(timer);
+    if (!r.ok) { throw new Error("bad response"); }
+    return r.text();
+  });
+}
+
+function apply(pricesText, shopText, stale) {
+  var groups = parsePrices(pricesText);
+  if (!groups) { throw new Error("prices tab not valid"); }
+  DATA = { groups: groups, shop: parseShop(shopText), stale: stale };
+  render();
+}
+
+function load() {
+  var cfg = SHOPS[shopKey];
+  if (!cfg) { showError(); return; }
+  if (!cfg.prices || !cfg.shop) { apply(DEMO_PRICES, DEMO_SHOP, false); return; }
+
+  showSkeleton();
+  var cacheKey = "pricedata_" + shopKey;
+  Promise.all([fetchText(cfg.prices), fetchText(cfg.shop)]).then(function (t) {
+    apply(t[0], t[1], false);
+    try { localStorage.setItem(cacheKey, JSON.stringify(t)); } catch (e) {}
+  }).catch(function () {
+    var saved = null;
+    try { saved = JSON.parse(localStorage.getItem(cacheKey)); } catch (e) {}
+    try {
+      if (saved && saved.length === 2) { apply(saved[0], saved[1], true); return; }
+    } catch (e2) {}
+    showError();
+  });
+}
+
+try {
+  var savedLang = localStorage.getItem("lang");
+  if (savedLang === "en" || savedLang === "hi" || savedLang === "or") { lang = savedLang; }
+} catch (e) {}
+
+var q = "";
+try { q = (new URLSearchParams(location.search).get("s") || "").trim().toLowerCase(); } catch (e) {}
+shopKey = q || DEFAULT_SHOP;
+
+setLogo(SHOPS[shopKey] ? SHOPS[shopKey].logo : "");
+render();
+load();
+</script>
+</body>
+</html>
