@@ -244,6 +244,8 @@
     transition: transform 0.25s ease;
   }
   .row.open .chev { transform: rotate(-135deg) translateY(-2px); }
+  /* when the types are open, the "from" price is not needed (every type shows its own price) */
+  .row.has-opts.open > .row-head .pricebox { display: none; }
   .note-wrap {
     display: grid;
     grid-template-rows: 0fr;
@@ -273,7 +275,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 12px 0 12px 14px;
+    padding: 10px 0 10px 14px;
     border-top: 1px solid var(--line);
     border-left: 1px solid var(--line);
   }
@@ -377,9 +379,14 @@ var TEXT = {
   from:  { en: "from", hi: "शुरुआती", or: "ଆରମ୍ଭ" },
   offer: { en: "Offer", hi: "ऑफर", or: "ଅଫର୍" },
   more:  { en: "More", hi: "और", or: "ଅଧିକ" },
-  until: { en: "Until {d}", hi: "{d} तक", or: "{d} ପର୍ଯ୍ୟନ୍ତ" }
+  until: { en: "Until {d}", hi: "{d} तक", or: "{d} ପର୍ଯ୍ୟନ୍ତ" },
+  types: { en: "{n} types", hi: "{n} प्रकार", or: "{n} ପ୍ରକାର" }
 };
 var LABELS = { en: "EN", hi: "हि", or: "ଓଡ଼ି" };
+
+/* A service with this many types or fewer shows all its types open.
+   A service with more types than this starts closed (tap the arrow). */
+var OPEN_LIMIT = 8;
 
 /* Sample logo mark (used when a shop has no logo file yet) */
 var SAMPLE_LOGO = '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">' +
@@ -760,12 +767,17 @@ function render() {
       var noteText = pick(it, "note");
       var opts = it.options || [];
       var expandable = !!noteText || opts.length > 0;
+      /* A service with a few types shows them all at once.
+         Only a service with many types starts closed (the customer taps the arrow). */
+      var startOpen = opts.length > 0 && opts.length <= OPEN_LIMIT;
+      if (opts.length) { row.classList.add("has-opts"); }
+      if (startOpen) { row.classList.add("open"); }
       var head = expandable ? el("button", "row-head") : el("div", "row-head");
-      if (expandable) { head.setAttribute("aria-expanded", "false"); head.type = "button"; }
+      if (expandable) { head.setAttribute("aria-expanded", startOpen ? "true" : "false"); head.type = "button"; }
 
       var left = el("div", "left");
       left.appendChild(el("div", "name", pick(it, "name")));
-      var tm = formatTime(it.minutes);
+      var tm = opts.length ? TEXT.types[lang].replace("{n}", String(opts.length)) : formatTime(it.minutes);
       if (tm) { left.appendChild(el("div", "time", tm)); }
 
       var right = el("div", "right");
