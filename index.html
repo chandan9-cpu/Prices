@@ -43,21 +43,54 @@
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   }
 
-  /* top bar */
-  .topbar {
+  /* top area: shop bar + tabs. It stays at the top while the page scrolls. */
+  .head {
     position: sticky;
     top: 0;
     z-index: 20;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: calc(env(safe-area-inset-top) + 6px) 20px 6px;
-    min-height: calc(52px + env(safe-area-inset-top));
     background: rgba(21, 21, 20, 0.94);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--line);
   }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(env(safe-area-inset-top) + 6px) 20px 6px;
+    min-height: calc(52px + env(safe-area-inset-top));
+  }
+
+  /* tabs (one tab for each group of the Sheet) */
+  .tabs { display: none; padding: 0 8px; }
+  .tabs.on { display: block; }
+  .tabs-in {
+    position: relative;
+    display: flex;
+    max-width: 640px;
+    margin: 0 auto;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs-in::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: 0 0 auto;
+    min-height: 46px;
+    padding: 0 12px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+  .tab.active { color: var(--text); border-bottom-color: var(--text); }
   .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .logo {
     width: 30px;
@@ -95,6 +128,7 @@
   }
   .lang-menu {
     display: none;
+    z-index: 5;
     position: absolute;
     right: 0;
     top: 100%;
@@ -141,10 +175,28 @@
   main {
     position: relative;
     z-index: 1;
-    max-width: 640px;
-    margin: 0 auto;
-    padding: 8px 20px calc(48px + env(safe-area-inset-bottom));
+    padding-bottom: calc(48px + env(safe-area-inset-bottom));
   }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 20px; }
+
+  /* pages: one page for each tab. The customer can swipe left and right. */
+  .pager {
+    display: flex;
+    align-items: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .pager::-webkit-scrollbar { display: none; }
+  .slide {
+    flex: 0 0 100%;
+    min-width: 0;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+  .slide .wrap { padding-top: 6px; }
   .stale {
     margin-top: 14px;
     padding: 10px 12px;
@@ -154,18 +206,6 @@
     border: 1px solid var(--line);
     border-radius: 10px;
   }
-  .group-title {
-    margin-top: 36px;
-    padding-bottom: 12px;
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--text);
-    border-bottom: 1px solid var(--line);
-  }
-  main > .group-title:first-child { margin-top: 18px; }
-
   .row { border-bottom: 1px solid var(--line); animation: rise 0.45s ease both; animation-delay: calc(var(--i, 0) * 35ms); }
   .row-head {
     display: flex;
@@ -267,6 +307,7 @@
 </head>
 <body>
 
+<div class="head">
 <header class="topbar">
   <div class="brand">
     <div class="logo" id="logoBox"></div>
@@ -281,6 +322,8 @@
     </div>
   </div>
 </header>
+<nav class="tabs" id="tabs" aria-label="Services"><div class="tabs-in" id="tabsIn" role="tablist"></div></nav>
+</div>
 
 <div class="notice" id="notice"></div>
 
@@ -307,7 +350,7 @@ var DEFAULT_SHOP = "sample";
 /* ============================================================
    DEMO DATA (same as the sample Sheet). Used only when links are empty.
    ============================================================ */
-var DEMO_PRICES = "group_en,group_hi,group_or,name_en,name_hi,name_or,minutes,price,note_en,note_hi,note_or,show,option_of,offer_price,offer_until\nHair,बाल,କେଶ,Haircut,हेयरकट,ହେୟାରକଟ୍,,,Wash and styling included.,वॉश और स्टाइलिंग शामिल है।,ୱାସ୍ ଏବଂ ଷ୍ଟାଇଲିଂ ଅନ୍ତର୍ଭୁକ୍ତ।,yes,,,\n,,,Trim / Maintenance,ट्रिम / मेंटेनेंस,ଟ୍ରିମ୍ / ମେଣ୍ଟେନାନ୍ସ,20,300,,,,yes,Haircut,,\n,,,Fringe / Bangs,फ्रिंज / बैंग्स,ଫ୍ରିଞ୍ଜ୍ / ବ୍ୟାଂଗ୍ସ,15,150,,,,yes,Haircut,,\n,,,Bob / Short Cut,बॉब / शॉर्ट कट,ବବ୍ / ଶର୍ଟ କଟ୍,40,600,,,,yes,Haircut,,\n,,,Step Cut,स्टेप कट,ଷ୍ଟେପ୍ କଟ୍,45,600,,,,yes,Haircut,,\n,,,U Cut / V Cut,यू कट / वी कट,ୟୁ କଟ୍ / ଭି କଟ୍,45,600,,,,yes,Haircut,,\n,,,Layer Cut,लेयर कट,ଲେୟାର କଟ୍,60,700,,,,yes,Haircut,,\n,,,Feather Cut,फेदर कट,ଫେଦର୍ କଟ୍,60,800,,,,yes,Haircut,,\n,,,Men's Haircut,मेन्स हेयरकट,ପୁରୁଷଙ୍କ ହେୟାରକଟ୍,30,300,,,,yes,Haircut,,\nHair,बाल,କେଶ,Hair Colour,हेयर कलर,ହେୟାର କଲର,,,Price depends on hair length.,कीमत बालों की लंबाई पर निर्भर करती है।,ମୂଲ୍ୟ କେଶର ଲମ୍ବ ଉପରେ ନିର୍ଭର କରେ।,yes,,,\n,,,Root Touch-up,रूट टच-अप,ରୁଟ୍ ଟଚ୍-ଅପ୍,60,1200,,,,yes,Hair Colour,,\n,,,Global Colour,ग्लोबल कलर,ଗ୍ଲୋବାଲ୍ କଲର,90,1800,,,,yes,Hair Colour,,\n,,,Highlights,हाइलाइट्स,ହାଇଲାଇଟ୍ସ,120,2500,,,,yes,Hair Colour,,\n,,,Balayage,बालायेज,ବାଲାୟାଜ୍,180,4000+,,,,yes,Hair Colour,,\nHair,बाल,କେଶ,Hair Spa,हेयर स्पा,ହେୟାର ସ୍ପା,60,1500,,,,yes,,,\nSkin,त्वचा,ତ୍ୱଚା,Clean-up,क्लीन-अप,କ୍ଲିନ୍-ଅପ୍,40,800,,,,yes,,,\nSkin,त्वचा,ତ୍ୱଚା,Facial,फेशियल,ଫେସିଆଲ,,,Choose the type with your therapist.,फेशियल का प्रकार अपने थेरेपिस्ट के साथ चुनें।,ଆପଣଙ୍କ ଥେରାପିଷ୍ଟଙ୍କ ସହ ପ୍ରକାର ବାଛନ୍ତୁ।,yes,,,\n,,,Basic Cleansing,बेसिक क्लींजिंग,ବେସିକ୍ କ୍ଲିନ୍ଜିଂ,45,800,,,,yes,Facial,,\n,,,Fruit Facial,फ्रूट फेशियल,ଫ୍ରୁଟ୍ ଫେସିଆଲ,60,1200,,,,yes,Facial,,\n,,,Anti-Tan Facial,एंटी-टैन फेशियल,ଆଣ୍ଟି-ଟ୍ୟାନ୍ ଫେସିଆଲ,60,1500,,,,yes,Facial,,\n,,,Gold Facial,गोल्ड फेशियल,ଗୋଲ୍ଡ ଫେସିଆଲ,60,1800,,,,yes,Facial,1500,2026-12-31\nSkin,त्वचा,ତ୍ୱଚା,Threading,थ्रेडिंग,ଥ୍ରେଡିଂ,15,100,,,,yes,,,\nHands & Feet,हाथ और पैर,ହାତ ଓ ପାଦ,Manicure,मैनिक्योर,ମ୍ୟାନିକ୍ୟୁର୍,45,700,,,,yes,,,\nHands & Feet,हाथ और पैर,ହାତ ଓ ପାଦ,Pedicure,पेडिक्योर,ପେଡିକ୍ୟୁର୍,60,900,,,,yes,,,\nHands & Feet,हाथ और पैर,ହାତ ଓ ପାଦ,Waxing (full arms),वैक्सिंग (पूरे हाथ),ୱାକ୍ସିଂ (ପୂରା ହାତ),30,400,,,,yes,,,\nBridal,ब्राइडल,ବ୍ରାଇଡାଲ୍,Bridal Makeup,ब्राइडल मेकअप,ବ୍ରାଇଡାଲ୍ ମେକଅପ୍,120,8000+,Trial available before the event.,इवेंट से पहले ट्रायल उपलब्ध है।,ଅନୁଷ୍ଠାନ ପୂର୍ବରୁ ଟ୍ରାଏଲ୍ ଉପଲବ୍ଧ।,yes,,,\n";
+var DEMO_PRICES = "group_en,group_hi,group_or,name_en,name_hi,name_or,minutes,price,note_en,note_hi,note_or,show,option_of,offer_price,offer_until\nHair,बाल,କେଶ,Haircut,हेयरकट,ହେୟାରକଟ୍,,,Wash and styling included.,वॉश और स्टाइलिंग शामिल है।,ୱାସ୍ ଏବଂ ଷ୍ଟାଇଲିଂ ଅନ୍ତର୍ଭୁକ୍ତ।,yes,,,\n,,,Trim / Maintenance,ट्रिम / मेंटेनेंस,ଟ୍ରିମ୍ / ମେଣ୍ଟେନାନ୍ସ,20,300,,,,yes,Haircut,,\n,,,Fringe / Bangs,फ्रिंज / बैंग्स,ଫ୍ରିଞ୍ଜ୍ / ବ୍ୟାଂଗ୍ସ,15,150,,,,yes,Haircut,,\n,,,Bob / Short Cut,बॉब / शॉर्ट कट,ବବ୍ / ଶର୍ଟ କଟ୍,40,600,,,,yes,Haircut,,\n,,,Step Cut,स्टेप कट,ଷ୍ଟେପ୍ କଟ୍,45,600,,,,yes,Haircut,,\n,,,U Cut / V Cut,यू कट / वी कट,ୟୁ କଟ୍ / ଭି କଟ୍,45,600,,,,yes,Haircut,,\n,,,Layer Cut,लेयर कट,ଲେୟାର କଟ୍,60,700,,,,yes,Haircut,,\n,,,Feather Cut,फेदर कट,ଫେଦର୍ କଟ୍,60,800,,,,yes,Haircut,,\n,,,Men's Haircut,मेन्स हेयरकट,ପୁରୁଷଙ୍କ ହେୟାରକଟ୍,30,300,,,,yes,Haircut,,\n,,,Blow-dry / Styling,ब्लो-ड्राई / स्टाइलिंग,ବ୍ଲୋ-ଡ୍ରାଏ / ଷ୍ଟାଇଲିଂ,30,400,,,,yes,,,\n,,,Hair Wash,हेयर वॉश,ହେୟାର ୱାଶ୍,20,200,,,,yes,,,\nFace & Skin,चेहरा और त्वचा,ମୁହଁ ଓ ତ୍ୱଚା,Threading,थ्रेडिंग,ଥ୍ରେଡିଂ,15,100,,,,yes,,,\n,,,Clean-up,क्लीन-अप,କ୍ଲିନ୍-ଅପ୍,40,800,,,,yes,,,\n,,,Facial,फेशियल,ଫେସିଆଲ,,,Choose the type with your therapist.,फेशियल का प्रकार अपने थेरेपिस्ट के साथ चुनें।,ଆପଣଙ୍କ ଥେରାପିଷ୍ଟଙ୍କ ସହ ପ୍ରକାର ବାଛନ୍ତୁ।,yes,,,\n,,,Basic Cleansing,बेसिक क्लींजिंग,ବେସିକ୍ କ୍ଲିନ୍ଜିଂ,45,800,,,,yes,Facial,,\n,,,Fruit Facial,फ्रूट फेशियल,ଫ୍ରୁଟ୍ ଫେସିଆଲ,60,1200,,,,yes,Facial,,\n,,,Anti-Tan Facial,एंटी-टैन फेशियल,ଆଣ୍ଟି-ଟ୍ୟାନ୍ ଫେସିଆଲ,60,1500,,,,yes,Facial,,\n,,,Gold Facial,गोल्ड फेशियल,ଗୋଲ୍ଡ ଫେସିଆଲ,60,1800,,,,yes,Facial,1500,2026-12-31\nColour & Spa,कलर और स्पा,କଲର ଓ ସ୍ପା,Hair Colour,हेयर कलर,ହେୟାର କଲର,,,Price depends on hair length.,कीमत बालों की लंबाई पर निर्भर करती है।,ମୂଲ୍ୟ କେଶର ଲମ୍ବ ଉପରେ ନିର୍ଭର କରେ।,yes,,,\n,,,Root Touch-up,रूट टच-अप,ରୁଟ୍ ଟଚ୍-ଅପ୍,60,1200,,,,yes,Hair Colour,,\n,,,Global Colour,ग्लोबल कलर,ଗ୍ଲୋବାଲ୍ କଲର,90,1800,,,,yes,Hair Colour,,\n,,,Highlights,हाइलाइट्स,ହାଇଲାଇଟ୍ସ,120,2500,,,,yes,Hair Colour,,\n,,,Balayage,बालायेज,ବାଲାୟାଜ୍,180,4000+,,,,yes,Hair Colour,,\n,,,Hair Spa,हेयर स्पा,ହେୟାର ସ୍ପା,60,1500,,,,yes,,,\nNails & Wax,नेल्स और वैक्स,ନେଲ୍ ଓ ୱାକ୍ସ,Manicure,मैनिक्योर,ମ୍ୟାନିକ୍ୟୁର୍,45,700,,,,yes,,,\n,,,Pedicure,पेडिक्योर,ପେଡିକ୍ୟୁର୍,60,900,,,,yes,,,\n,,,Waxing (full arms),वैक्सिंग (पूरे हाथ),ୱାକ୍ସିଂ (ପୂରା ହାତ),30,400,,,,yes,,,\n,,,Waxing (full legs),वैक्सिंग (पूरे पैर),ୱାକ୍ସିଂ (ପୂରା ପାଦ),40,600,,,,yes,,,\n,,,Waxing (underarms),वैक्सिंग (अंडरआर्म्स),ୱାକ୍ସିଂ (ଅଣ୍ଡରଆର୍ମ୍),10,100,,,,yes,,,\nBridal & Party,ब्राइडल और पार्टी,ବ୍ରାଇଡାଲ୍ ଓ ପାର୍ଟି,Bridal Makeup,ब्राइडल मेकअप,ବ୍ରାଇଡାଲ୍ ମେକଅପ୍,120,8000+,Trial available before the event.,इवेंट से पहले ट्रायल उपलब्ध है।,ଅନୁଷ୍ଠାନ ପୂର୍ବରୁ ଟ୍ରାଏଲ୍ ଉପଲବ୍ଧ।,yes,,,\n,,,Party Makeup,पार्टी मेकअप,ପାର୍ଟି ମେକଅପ୍,60,2500+,,,,yes,,,\n,,,Party Hairstyle,पार्टी हेयरस्टाइल,ପାର୍ଟି ହେୟାରଷ୍ଟାଇଲ୍,45,800+,,,,yes,,,\n";
 var DEMO_SHOP = "key,value\nname,Sample Salon\nnotice_on,no\nnotice_until,2026-12-31\nnotice_en,Festive offer: 10% off on all facials this week\nnotice_hi,त्योहार ऑफर: इस हफ्ते सभी फेशियल पर 10% छूट\nnotice_or,ପର୍ବ ଅଫର୍: ଏହି ସପ୍ତାହ ସବୁ ଫେସିଆଲରେ 10% ଛାଡ଼\nnote_en,Final price may vary by hair length and treatment.\nnote_hi,अंतिम कीमत बालों की लंबाई और ट्रीटमेंट के अनुसार बदल सकती है।\nnote_or,ଶେଷ ମୂଲ୍ୟ କେଶର ଲମ୍ବ ଏବଂ ଚିକିତ୍ସା ଅନୁସାରେ ଭିନ୍ନ ହୋଇପାରେ।\nupdated,27 Oct 2026\n";
 
 /* ============================================================
@@ -333,6 +376,7 @@ var TEXT = {
   updated: { en: "Prices updated", hi: "कीमतें अपडेट की गईं", or: "ମୂଲ୍ୟ ଅପଡେଟ୍ ହୋଇଛି" },
   from:  { en: "from", hi: "शुरुआती", or: "ଆରମ୍ଭ" },
   offer: { en: "Offer", hi: "ऑफर", or: "ଅଫର୍" },
+  more:  { en: "More", hi: "और", or: "ଅଧିକ" },
   until: { en: "Until {d}", hi: "{d} तक", or: "{d} ପର୍ଯ୍ୟନ୍ତ" }
 };
 var LABELS = { en: "EN", hi: "हि", or: "ଓଡ଼ି" };
@@ -398,11 +442,14 @@ function parsePrices(text) {
   if (rows.length < 2) { return null; }
   var head = rows[0].map(function (x) { return String(x).trim().toLowerCase(); });
   if (head.indexOf("name_en") < 0 || head.indexOf("price") < 0) { return null; }
-  var groups = [], byKey = {}, parents = {}, optionRows = [], r, j, o, k, item;
+  var groups = [], byKey = {}, parents = {}, optionRows = [], r, j, o, k, item, lastGroup = null;
   for (r = 1; r < rows.length; r++) {
     o = {};
     for (j = 0; j < head.length; j++) { o[head[j]] = rows[r][j] === undefined ? "" : String(rows[r][j]); }
     if (!String(o.name_en).trim()) { continue; }
+    /* A row with an empty group belongs to the group above it. */
+    if (String(o.group_en || "").trim()) { lastGroup = o; }
+    else if (lastGroup) { o.group_en = lastGroup.group_en; o.group_hi = lastGroup.group_hi; o.group_or = lastGroup.group_or; }
     if (isNo(o.show)) { continue; }
     if (String(o.option_of || "").trim()) { optionRows.push(o); continue; }
     o.options = [];
@@ -510,20 +557,119 @@ function el(tag, cls, txt) {
 function showError() {
   var list = document.getElementById("list");
   list.innerHTML = "";
-  list.appendChild(el("div", "error", TEXT.error[lang]));
+  var w = el("div", "wrap");
+  w.appendChild(el("div", "error", TEXT.error[lang]));
+  list.appendChild(w);
   document.getElementById("notice").classList.remove("on");
+  document.getElementById("tabs").classList.remove("on");
 }
 
 function showSkeleton() {
   var list = document.getElementById("list");
   list.innerHTML = "";
+  var w = el("div", "wrap");
+  w.style.paddingTop = "12px";
   for (var i = 0; i < 7; i++) {
     var s = el("div", "skel");
     s.appendChild(el("i"));
     s.appendChild(el("i"));
-    list.appendChild(s);
+    w.appendChild(s);
+  }
+  list.appendChild(w);
+}
+
+/* ---------- tabs and swipe pages ---------- */
+var activeTab = 0;      // the page that is open now
+var lockTarget = null;  // set while a tap is moving the pages (so the swipe code waits)
+var RO = null;
+
+function groupLabel(g) { return pick(g.first, "group") || TEXT.more[lang]; }
+
+function fitPager() {
+  var pager = document.getElementById("pager");
+  if (!pager) { return; }
+  var s = pager.children[activeTab];
+  if (s) { pager.style.height = s.offsetHeight + "px"; }
+}
+
+function markTab(i) {
+  var box = document.getElementById("tabsIn");
+  var btns = box.querySelectorAll(".tab");
+  for (var b = 0; b < btns.length; b++) {
+    var on = (b === i);
+    btns[b].classList.toggle("active", on);
+    btns[b].setAttribute("aria-selected", on ? "true" : "false");
+    btns[b].tabIndex = on ? 0 : -1;
+  }
+  var cur = btns[i];
+  if (cur) {
+    var left = cur.offsetLeft - (box.clientWidth - cur.offsetWidth) / 2;
+    try { box.scrollTo({ left: left, behavior: "smooth" }); } catch (e) { box.scrollLeft = left; }
   }
 }
+
+function setActive(i) {
+  if (i === activeTab) { return; }
+  activeTab = i;
+  markTab(i);
+  fitPager();
+  if (window.scrollY > 0) {
+    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { window.scrollTo(0, 0); }
+  }
+}
+
+function selectTab(i) {
+  var pager = document.getElementById("pager");
+  if (!pager) { return; }
+  var w = pager.clientWidth;
+  lockTarget = i;
+  setTimeout(function () { lockTarget = null; }, 1200);
+  setActive(i);
+  try { pager.scrollTo({ left: i * w, behavior: "smooth" }); } catch (e) { pager.scrollLeft = i * w; }
+}
+
+function onPagerScroll() {
+  var pager = document.getElementById("pager");
+  if (!pager) { return; }
+  var w = pager.clientWidth;
+  if (!w) { return; }
+  if (lockTarget !== null) {
+    if (Math.abs(pager.scrollLeft - lockTarget * w) < 3) { lockTarget = null; }
+    return;
+  }
+  var i = Math.round(pager.scrollLeft / w);
+  if (i >= 0 && i < pager.children.length) { setActive(i); }
+}
+
+function buildTabs() {
+  var nav = document.getElementById("tabs");
+  var box = document.getElementById("tabsIn");
+  box.innerHTML = "";
+  if (DATA.groups.length < 2) { nav.classList.remove("on"); return; }
+  DATA.groups.forEach(function (g, gi) {
+    var b = el("button", "tab", groupLabel(g));
+    b.type = "button";
+    b.setAttribute("role", "tab");
+    b.addEventListener("click", function () { selectTab(gi); });
+    box.appendChild(b);
+  });
+  nav.classList.add("on");
+}
+
+document.getElementById("tabsIn").addEventListener("keydown", function (e) {
+  var d = e.key === "ArrowRight" ? 1 : (e.key === "ArrowLeft" ? -1 : 0);
+  if (!d) { return; }
+  var n = DATA ? DATA.groups.length : 0;
+  var i = Math.max(0, Math.min(n - 1, activeTab + d));
+  selectTab(i);
+  var btns = this.querySelectorAll(".tab");
+  if (btns[i]) { btns[i].focus(); }
+  e.preventDefault();
+});
+window.addEventListener("resize", function () {
+  var pager = document.getElementById("pager");
+  if (pager) { pager.scrollLeft = activeTab * pager.clientWidth; fitPager(); }
+});
 
 function priceBox(it) {
   var box = el("div", "pricebox");
@@ -585,12 +731,26 @@ function render() {
   var list = document.getElementById("list");
   list.innerHTML = "";
 
-  if (DATA.stale) { list.appendChild(el("div", "stale", TEXT.stale[lang])); }
+  if (activeTab >= DATA.groups.length) { activeTab = 0; }
+  buildTabs();
+
+  if (DATA.stale) {
+    var sw = el("div", "wrap");
+    sw.appendChild(el("div", "stale", TEXT.stale[lang]));
+    list.appendChild(sw);
+  }
+
+  var pager = el("div", "pager");
+  pager.id = "pager";
 
   var n = 0;
   DATA.groups.forEach(function (g) {
-    var gt = pick(g.first, "group");
-    if (gt) { list.appendChild(el("div", "group-title", gt)); }
+    var slide = el("div", "slide");
+    slide.setAttribute("role", "tabpanel");
+    var pageWrap = el("div", "wrap");
+    slide.appendChild(pageWrap);
+    pager.appendChild(slide);
+    n = 0;
 
     g.items.forEach(function (it) {
       var row = el("div", "row");
@@ -632,15 +792,27 @@ function render() {
           head.setAttribute("aria-expanded", open ? "true" : "false");
         });
       }
-      list.appendChild(row);
+      pageWrap.appendChild(row);
     });
   });
+  list.appendChild(pager);
 
-  var foot = el("p", "footnote", pick(shop, "note") || TEXT.note[lang]);
-  list.appendChild(foot);
+  var fw = el("div", "wrap");
+  fw.appendChild(el("p", "footnote", pick(shop, "note") || TEXT.note[lang]));
   if (shop.updated) {
-    list.appendChild(el("p", "updated", TEXT.updated[lang] + ": " + shop.updated));
+    fw.appendChild(el("p", "updated", TEXT.updated[lang] + ": " + shop.updated));
   }
+  list.appendChild(fw);
+
+  pager.addEventListener("scroll", onPagerScroll, { passive: true });
+  if (window.ResizeObserver) {
+    if (RO) { RO.disconnect(); }
+    RO = new ResizeObserver(fitPager);
+    Array.prototype.forEach.call(pager.children, function (s) { RO.observe(s); });
+  }
+  pager.scrollLeft = activeTab * pager.clientWidth;
+  markTab(activeTab);
+  fitPager();
 }
 
 /* --- language menu --- */
